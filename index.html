@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>🍲 Meal Search App</title>
+  <title>🍲 Meal Search Website</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -104,7 +104,7 @@
 </head>
 <body>
 
-  <h1>🍲 Meal Search App</h1>
+  <h1>🍲 Meal Search Website</h1>
 
   <input type="text" id="mealInput" placeholder="Search for a meal...">
   <button onclick="searchMeal()">Search</button>
@@ -122,25 +122,41 @@
         return;
       }
 
-      const response = await fetch(`https://www.themealdb.com/api/json/v1/1/search.php?s=${input}`);
-      const data = await response.json();
+      try {
+        // Fetch from TheMealDB
+        const mealResponse = await fetch(`https://www.themealdb.com/api/json/v1/1/search.php?s=${input}`);
+        const mealData = await mealResponse.json();
 
-      if (!data.meals) {
-        mealContainer.innerHTML = `<p>No meals found for "<strong>${input}</strong>".</p>`;
-        return;
+        if (!mealData.meals) {
+          mealContainer.innerHTML = `<p>No meals found for "<strong>${input}</strong>".</p>`;
+          return;
+        }
+
+        const meal = mealData.meals[0];
+
+        // Fetch calories from API Ninjas
+        const nutritionResponse = await fetch(`https://api.api-ninjas.com/v1/nutrition?query=${meal.strMeal}`, {
+          headers: { 'X-Api-Key': 'YOUR_API_KEY' } // 🔐 Replace this with your API key
+        });
+
+        const nutritionData = await nutritionResponse.json();
+        const calories = nutritionData[0]?.calories || 'N/A';
+
+        // Display the result
+        mealContainer.innerHTML = `
+          <div class="card">
+            <img src="${meal.strMealThumb}" alt="${meal.strMeal}">
+            <h2>${meal.strMeal}</h2>
+            <div class="badge">Category: ${meal.strCategory}</div>
+            <div class="badge">Area: ${meal.strArea}</div>
+            <div class="badge">Calories: ${calories} kcal</div>
+            <a href="${meal.strYoutube}" target="_blank">▶ Watch on YouTube</a>
+          </div>
+        `;
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        mealContainer.innerHTML = `<p>There was an error fetching meal or calorie data. Please try again later.</p>`;
       }
-
-      const meal = data.meals[0];
-
-      mealContainer.innerHTML = `
-        <div class="card">
-          <img src="${meal.strMealThumb}" alt="${meal.strMeal}">
-          <h2>${meal.strMeal}</h2>
-          <div class="badge">Category: ${meal.strCategory}</div>
-          <div class="badge">Area: ${meal.strArea}</div>
-          <a href="${meal.strYoutube}" target="_blank">▶ Watch on YouTube</a>
-        </div>
-      `;
     }
   </script>
 
